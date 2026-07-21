@@ -43,3 +43,44 @@ async def get_current_user(request: Request) -> AuthUser:
         httpx_request,
         AuthenticateRequestOptions(authorized_parties=[settings.FRONTEND_URL])
     )
+
+    if not request_state.is_signed_in:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authenticated"
+        )
+    
+    claims = request_state.payload
+
+    user_id = claims.get("sub")
+    org_id = claims.get("org_id")
+    org_permissions = claims.get("permissions") or claims.get("org_permissions") or []
+
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authenticated"
+        )
+    
+    if not org_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authenticated"
+        )
+    
+    return AuthUser(user_id=user_id, org_id=org_id, org_permissions=org_permissions)
+
+def require_view(user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    if not user.can_view:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="View permission requiered"
+        )
+    
+    return user
+
+def require_create(user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    if not user.can_create:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Create permission required"
+        )
+    
+    return user
