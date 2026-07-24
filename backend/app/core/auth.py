@@ -84,3 +84,12 @@ def require_create(user: AuthUser = Depends(get_current_user)) -> AuthUser:
         )
     
     return user
+
+def require_delete(user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    if not user.can_delete:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Delete permission required"
+        )
+    
+    return user
